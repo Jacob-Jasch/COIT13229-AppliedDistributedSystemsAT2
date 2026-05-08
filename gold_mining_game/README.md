@@ -68,45 +68,6 @@ Run specific test class:
 python -m unittest test_distributed_game.TestGameState -v
 ```
 
-### Test Coverage
-- ✓ Game state serialization
-- ✓ ZooKeeper integration
-- ✓ Game logic (clamping, spawning, nearest gold)
-- ✓ Distributed consistency with simulated lag
-- ✓ State persistence
-
-## Distributed Deployment
-
-To run players on different machines:
-
-**Machine A (ZooKeeper + Game Server)**
-```bash
-docker run -d -p 2181:2181 zookeeper
-python game_server.py
-```
-
-**Machine B (Player Client)**
-```bash
-python player_client.py <MACHINE_A_IP>:2181
-```
-
-**Machine C (Another Player)**
-```bash
-python player_client.py <MACHINE_A_IP>:2181
-```
-
-## Design Highlights
-
-- **Consistency Model**: Eventual Consistency via ZooKeeper
-- **Coordination**: ZooKeeper znodes store game state
-- **Scalability**: Supports multiple concurrent players
-- **Fault Tolerance**: Handles network delays, client disconnections
-- **Simple Architecture**: Centralized server with polling clients
-
-See `ARCHITECTURE.md` for complete design documentation including component diagrams, 
-consistency model rationale, class hierarchies, and interaction sequences. This content 
-can be incorporated into your report.docx file.
-
 ## Game Rules
 
 1. Players and bots spawn randomly on a 20x20 grid
@@ -114,7 +75,7 @@ can be incorporated into your report.docx file.
 3. Players move using WASD keys
 4. Bots automatically move toward nearest gold
 5. Collecting gold increases your score
-6. The human player attempts to outcompete the bots
+6. The human player attempts to win against the bots
 
 ## Troubleshooting
 
@@ -134,5 +95,3 @@ can be incorporated into your report.docx file.
 
 - This is a prototype implementation for educational purposes
 - The game demonstrates distributed coordination using ZooKeeper
-- All components are intentionally kept simple and readable
-- See ARCHITECTURE.md for design rationale and consistency model details
