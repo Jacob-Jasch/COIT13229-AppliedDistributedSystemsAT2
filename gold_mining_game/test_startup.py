@@ -1,68 +1,72 @@
-"""
-Quick startup test for the distributed Gold Miner game.
-
-This test starts the game server, connects a player client,
-reads game state, sends a move, and checks that communication works.
-"""
+"""Quick startup test for the turn-based distributed Gold Miner game."""
 
 import threading
 import time
 
+from bot_client import BotClient
 from game_server import GameServer
 from player_client import PlayerClient
 
 
-def test_game_startup():
-    """Test that the game server and client can start and communicate."""
+def run_in_thread(target):
+    thread = threading.Thread(target=target)
+    thread.start()
+    return thread
 
+
+def test_game_startup():
     print("=" * 60)
     print("STARTUP TEST")
     print("=" * 60)
 
-    server = GameServer()
+    root = "/gold_mining_game_startup_test"
+    server = GameServer(game_root=root, bot_timeout_seconds=2.0)
+    server_thread = run_in_thread(lambda: server.run(duration_seconds=10))
 
-    server_thread = threading.Thread(
-        target=lambda: server.run(duration_seconds=3),
-        daemon=True
-    )
-    server_thread.start()
+    bots = [BotClient(f"bot_{i}", game_root=root) for i in range(3)]
+    bot_threads = [run_in_thread(bot.play) for bot in bots]
 
-    print("\nGame Server started")
-    time.sleep(1)
-
-    client = PlayerClient()
+    client = PlayerClient(game_root=root)
 
     try:
+        time.sleep(1)
         client.wait_for_game(timeout=5)
-        print("Player Client connected to server")
+        print("Player client connected")
 
         state = client.get_game_state()
-        print("Game state retrieved:")
+        print("Initial state:")
+        print(f"- Turn: {state.turn}")
         print(f"- Player position: ({state.player_x}, {state.player_y})")
         print(f"- Player score: {state.player_score}")
-        print(f"- Number of bots: {len(state.bots)}")
+        print(f"- Bots connected so far: {len(state.bots)}")
         print(f"- Gold locations: {len(state.golds)}")
 
-        client.send_move("w")
-        print("Player move sent to server")
+        client.send_move("w", state.turn)
+        print("Player move sent; waiting for bots and next turn")
+        updated = client.wait_for_turn_to_finish(state.turn, timeout=5)
 
-        time.sleep(0.5)
+        print("Updated state:")
+        print(f"- Turn: {updated.turn}")
+        print(f"- Player position: ({updated.player_x}, {updated.player_y})")
+        print(f"- Player score: {updated.player_score}")
+        print(f"- Bots: {len(updated.bots)}")
+        print(f"- Gold locations: {len(updated.golds)}")
+        for bot_id, bot_data in sorted(updated.bots.items()):
+            print(f"- {bot_id}: position ({bot_data['x']}, {bot_data['y']}), score {bot_data['score']}")
 
-        updated_state = client.get_game_state()
-        print("Updated game state received:")
-        print(f"- Player position: ({updated_state.player_x}, {updated_state.player_y})")
-        print(f"- Player score: {updated_state.player_score}")
-
-        print("\n" + "=" * 60)
-        print("PASSED")
-        print("=" * 60)
-
-    except Exception as e:
-        print(f"Startup test failed: {e}")
-
+        if updated.turn >= 1 and len(updated.bots) >= 3 and len(updated.golds) == 5:
+            print("\nPASSED")
+        else:
+            print("\nFAILED: expected next turn, 3 bots, and 5 gold positions")
     finally:
         client.cleanup()
+        for bot in bots:
+            bot.cleanup()
         server.cleanup()
+
+        for thread in bot_threads:
+            thread.join(timeout=2)
+        server_thread.join(timeout=2)
 
 
 if __name__ == "__main__":
