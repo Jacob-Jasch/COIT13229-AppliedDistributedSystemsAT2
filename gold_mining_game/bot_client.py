@@ -1,5 +1,3 @@
-"""Autonomous turn-based bot client for Gold Miner."""
-
 import json
 import random
 import time
@@ -33,7 +31,6 @@ class BotClient:
         print(f"Bot {self.bot_id}: connected")
 
     def _register(self):
-        """Create an ephemeral node so ZooKeeper removes it if this bot dies."""
         try:
             self.zk.create(self.member_path, b"active", ephemeral=True, makepath=True)
         except NodeExistsError:
@@ -82,7 +79,6 @@ class BotClient:
             while self.running:
                 state = self.get_game_state()
 
-                # Bots only think and move when the server opens the bot phase.
                 if state and state.phase == WAITING_FOR_BOTS and state.turn != self.last_turn_sent:
                     self.send_move(self.choose_move(state), state.turn)
                     self.last_turn_sent = state.turn

@@ -125,4 +125,4 @@ def draw_board(state):
     print(f"Player score: {state.player_score}")
     for bot_id, bot_data in sorted(state.bots.items()):
         print(f"{bot_id} score: {bot_data['score']}")
-    print("\nPress Q to quit the game.")
+    print("\nPress Q to quit the game, or R to reset.")
